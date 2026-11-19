@@ -43,10 +43,10 @@
 2. 可选：`WECOM_AIBOT_ID` / `WECOM_AIBOT_SECRET`（不填就收不到企微文件）
 3. 可选：端口（默认 7000/7001/7200/7300/7400/13210）
 
-## 五、发布前还要决定的（等 YG 定）
+## 五、已定 / 待定
 
-- [ ] **设计文档要不要进仓库**：`SNAO_Framework_v1.1.md`、`SNAO_共识与决策`、`SNAO_四岛决策`、`SNAO_实现方案与路线图`、`调研/`。
-      里面有公司名、`corpId`、`dntai.online`、以及内部决策与教训。客户可见的话建议先脱敏或移出。
+- [x] **设计文档不进仓库**（2026-11-19 YG 定）：`SNAO_Framework_v1.1.md`、`SNAO_共识与决策`、`SNAO_四岛决策`、`SNAO_实现方案与路线图`、`调研/`、`AGENTS.md` 全部留在本地，已写进 `.gitignore`
+- [x] 首次 commit：`33f92f8`，49 个文件 / 0.4MB；`.git` 仅 396K（重建过一次，清掉了早期误入的数据库对象）
+- [x] 干净克隆验证：`git clone` → `npm install`（55 个包，3 秒）→ `./snao status` 正常
 - [ ] 仓库地址与可见性（public / private）
-- [ ] 首次 commit（我不擅自提交）
 - [ ] `LICENSE`（客户要商用授权，得有明确条款）
