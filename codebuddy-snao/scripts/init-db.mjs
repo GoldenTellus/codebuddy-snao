@@ -18,7 +18,7 @@ const env = Object.fromEntries(
 
 const PG = {
   host: '127.0.0.1',
-  port: Number(env.PGPORT ?? 15432),
+  port: Number(process.env.PGPORT ?? env.PG_HOST_PORT ?? 15432),
   user: 'postgres',
   password: env.POSTGRES_PASSWORD,
 };

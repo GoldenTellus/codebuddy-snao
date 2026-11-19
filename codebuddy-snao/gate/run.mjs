@@ -20,12 +20,13 @@ const args = process.argv.slice(2);
 const SAVE = args.includes('--save');
 const VERBOSE = args.includes('--verbose');
 
+// 端口可由环境变量覆盖，便于同一台机器跑多套或做干净环境验证
 const TARGETS = {
-  gateway: 'http://127.0.0.1:7000',
-  line: 'http://127.0.0.1:7001',
-  island02: 'http://127.0.0.1:7200',
-  island03: 'http://127.0.0.1:7400',
-  island04: 'http://127.0.0.1:7300',
+  gateway: process.env.SNAO_GATEWAY_URL ?? `http://127.0.0.1:${process.env.SNAO_GATEWAY_PORT ?? 7000}`,
+  line: `http://127.0.0.1:${process.env.SNAO_LINE_PORT ?? 7001}`,
+  island02: `http://127.0.0.1:${process.env.SNAO_PRECIPITATE_PORT ?? 7200}`,
+  island03: `http://127.0.0.1:${process.env.SNAO_INTAKE_PORT ?? 7400}`,
+  island04: `http://127.0.0.1:${process.env.SNAO_IDENTITY_PORT ?? 7300}`,
 };
 
 /** 行内对象解析：把 `{ a: 1, json: { k: v } }` 变成对象（只支持我们写的形态） */

@@ -37,6 +37,24 @@
 
 - [x] `searxng` / `elasticsearch` / `fts-search-*` 默认不启动（`searxng` 收进 `--profile search`）
 
+## 三·五、干净环境验证（2026-11-19 实做）
+
+在 `/tmp/snao-cr` 起了一套**完全独立**的环境（新端口、新库、新密钥、新 docker 项目名），模拟客户机：
+
+- [x] 从零 `npm install` → `bootstrap` → `up` → `verify` **13/13 通过**
+- [x] 抓出并修掉 5 个只有换环境才暴露的问题：
+
+| # | 问题 | 后果 |
+|---|---|---|
+| 1 | PG 宿主端口写死 15432 | 客户机端口被占就起不来 |
+| 2 | 容器名写死（`lobe-postgres`/`lobe-rustfs-init`） | 同机第二套直接撞名 |
+| 3 | `init-db` 只认 `PGPORT`，不认 `PG_HOST_PORT` | 多实例时连错库 |
+| 4 | `. <(grep ...)` 读 .env 静默读空 | 端口/口令全没生效，服务起在默认端口 |
+| 5 | 闸门用例绑死本机数据状态（要 3 篇文档、要有授权） | 新装机器 `verify` 必然失败 |
+
+修法：端口与项目名全部可配；容器名加 `${COMPOSE_PROJECT_NAME}` 前缀；`.env` 改逐行读；
+L-03 允许首次 202；新增 `scripts/seed-fixtures.mjs`（`./snao up` 自动备最小样例数据）。
+
 ## 四、客户要改的只有三处
 
 1. `deploy/.env` → `POSTGRES_PASSWORD`（其余密钥留空自动生成）

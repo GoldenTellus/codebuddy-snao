@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SNAO 1.0 一键运维
 #
-#   ./snao bootstrap   第一次：生成密钥、建库、建表、发管理员令牌
+#   ./snao bootstrap   第一次：生成密钥、起岛 01、建库建表、发管理员令牌
 #   ./snao up          起全部服务（岛 01 用 docker，其余用 node）
 #   ./snao down        全停
 #   ./snao status      看状态
@@ -24,112 +24,112 @@ ok()  { printf "%b✓%b %s\n" "$c_ok" "$c_off" "$*"; }
 bad() { printf "%b✗%b %s\n" "$c_bad" "$c_off" "$*"; }
 
 need_env() {
-  if [ ! -f "$ENV_FILE" ]; then
-    bad "缺少 $ENV_FILE —— 先执行：cp deploy/.env.example $ENV_FILE"
-    exit 1
-  fi
+  [ -f "$ENV_FILE" ] || { bad "缺少 $ENV_FILE —— 先执行：cp deploy/.env.example $ENV_FILE"; exit 1; }
+}
+
+# 把 .env 读进环境（逐行读；不用 `. <(grep ...)`，那个写法在某些 shell 下会静默读空）
+source_env() {
+  local line k v
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|\#*) continue ;; esac
+    case "$line" in *=*) ;; *) continue ;; esac
+    k="${line%%=*}"; v="${line#*=}"
+    case "$k" in *[!A-Z_]*) continue ;; esac
+    export "$k=$v"
+  done < "$ENV_FILE"
+  [ -n "${PG_HOST_PORT:-}" ] && export PGPORT="$PG_HOST_PORT"
+  export SNAO_TENANT="${SNAO_TENANT:-t1}"
 }
 
 env_get() { grep -E "^$1=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-; }
 
-# ---------- 服务清单（宿主侧跑的 node 服务）----------
 SERVICES=(
-  "line:./line/server.ts:${SNAO_LINE_PORT:-7001}"
-  "gateway:./gateway/server.ts:${SNAO_GATEWAY_PORT:-7000}"
-  "island02:./islands/precipitate/server.ts:${SNAO_PRECIPITATE_PORT:-7200}"
-  "island03:./islands/intake/server.ts:${SNAO_INTAKE_PORT:-7400}"
-  "island04:./islands/identity/server.ts:${SNAO_IDENTITY_PORT:-7300}"
+  "line:./line/server.ts"
+  "gateway:./gateway/server.ts"
+  "island02:./islands/precipitate/server.ts"
+  "island03:./islands/intake/server.ts"
+  "island04:./islands/identity/server.ts"
 )
 
+# 端口在用的时候才取（source_env 之后），避免脚本加载时就被默认值钉死
+port_of() {
+  case "$1" in
+    line)     echo "${SNAO_LINE_PORT:-7001}" ;;
+    gateway)  echo "${SNAO_GATEWAY_PORT:-7000}" ;;
+    island02) echo "${SNAO_PRECIPITATE_PORT:-7200}" ;;
+    island03) echo "${SNAO_INTAKE_PORT:-7400}" ;;
+    island04) echo "${SNAO_IDENTITY_PORT:-7300}" ;;
+  esac
+}
+path_of() { [ "$1" = gateway ] && echo /gw/health || echo /health; }
+
+pid_alive() { [ -f "$PID_DIR/$1.pid" ] && kill -0 "$(cat "$PID_DIR/$1.pid")" 2>/dev/null; }
+
 start_node() {
-  local name="$1" entry="$2" port="$3"
-  if [ -f "$PID_DIR/$name.pid" ] && kill -0 "$(cat "$PID_DIR/$name.pid")" 2>/dev/null; then
-    say "  $name 已在运行"
-    return
-  fi
+  local name="$1" entry="$2" port; port="$(port_of "$1")"
+  if pid_alive "$name"; then say "  $name 已在运行"; return; fi
   node --import tsx "$entry" > "$LOG_DIR/$name.log" 2>&1 &
   echo $! > "$PID_DIR/$name.pid"
   say "  $name 启动中（:${port}）"
 }
 
 stop_node() {
-  local name="$1"
-  local pf="$PID_DIR/$name.pid"
+  local pf="$PID_DIR/$1.pid"
   [ -f "$pf" ] || return
-  local pid; pid="$(cat "$pf")"
-  kill "$pid" 2>/dev/null && say "  $name 停止"
+  kill "$(cat "$pf")" 2>/dev/null && say "  $1 停止"
   rm -f "$pf"
 }
 
-health() {
-  curl -sS -o /dev/null --max-time 3 "http://127.0.0.1:$1$2" 2>/dev/null
+alive() { curl -sS -o /dev/null --max-time 3 "http://127.0.0.1:$1$2" 2>/dev/null; }
+
+wait_pg() {
+  local cname="${COMPOSE_PROJECT_NAME:-lobehub}-postgres" st=""
+  for _ in $(seq 1 60); do
+    st=$(docker inspect --format='{{.State.Health.Status}}' "$cname" 2>/dev/null)
+    [ "$st" = "healthy" ] && { ok "数据库就绪"; return 0; }
+    sleep 2
+  done
+  bad "数据库没起来（容器 $cname 状态：${st:-不存在}）"; return 1
 }
 
 case "${1:-status}" in
   bootstrap)
     need_env
-    echo "== 1/5 检查依赖 =="
-    command -v node >/dev/null || { bad "没有 node"; exit 1; }
+    echo "== 1/6 检查依赖 =="
+    command -v node   >/dev/null || { bad "没有 node"; exit 1; }
     command -v docker >/dev/null || { bad "没有 docker"; exit 1; }
-    ok "node $(node -v) / docker $(docker -v | awk '{print $3}' | tr -d ,)"
+    ok "node $(node -v) / $(docker -v | awk '{print $3}' | tr -d ,)"
 
-    echo "== 2/5 补齐密钥 =="
-    python3 - "$ENV_FILE" <<'PY'
-import re, secrets, sys, pathlib
-p = pathlib.Path(sys.argv[1]); s = p.read_text(encoding='utf-8')
-def gen(n, hexa=False):
-    return secrets.token_hex(n) if hexa else secrets.token_urlsafe(n)
-changed = []
-for key, val, hexa in [
-    ('AUTH_SECRET', gen(32, True), True),
-    ('KEY_VAULTS_SECRET', gen(24), False),
-    ('GATEWAY_SERVICE_TOKEN', gen(24, True), True),
-    ('SNAO_LINE_SECRET', gen(18), False),
-    ('SNAO_ADMIN_TOKEN', gen(24), False),
-    ('RUSTFS_SECRET_KEY', gen(16), False),
-]:
-    pat = re.compile(rf'^{key}=.*$', re.M)
-    cur = pat.search(s)
-    if cur and re.search(r'CHANGE_ME|^$', cur.group(0).split('=',1)[1]):
-        s = pat.sub(f'{key}={val}', s, count=1)
-        changed.append(key)
-p.write_text(s, encoding='utf-8')
-print('  已生成:', ', '.join(changed) if changed else '（无需生成，值都已存在）')
-PY
+    echo "== 2/6 补齐密钥 =="
+    node scripts/gen-secrets.mjs || { bad "生成密钥失败"; exit 1; }
+    source_env
     ok "密钥就绪"
 
-    echo "== 3/5 起岛 01（docker）=="
-    (cd deploy && docker compose up -d --remove-orphans 2>&1 | tail -3)
-    say "  等待岛 01 就绪…"
-    for i in $(seq 1 60); do
-      health "${LOBE_PORT:-13210}" /api/v1/health && break
-      sleep 2
-    done
-    ok "岛 01 就绪（:${LOBE_PORT:-13210}）"
+    echo "== 3/6 起岛 01（docker）=="
+    (cd deploy && docker compose up -d --remove-orphans 2>&1 | grep -E "Error|error" | head -3)
+    wait_pg || exit 1
 
-    echo "== 4/5 建库建表 =="
+    echo "== 4/6 建库建表 =="
     node scripts/init-db.mjs || { bad "建库失败"; exit 1; }
     ok "库与表就绪"
 
-    echo "== 5/5 完成 =="
+    echo "== 5/6 等岛 01 起来 =="
+    for _ in $(seq 1 60); do alive "${LOBE_PORT:-13210}" /api/v1/health && break; sleep 2; done
+    ok "岛 01 就绪（:${LOBE_PORT:-13210}）"
+
+    echo "== 6/6 完成 =="
     ok "管理员令牌：$(env_get SNAO_ADMIN_TOKEN)"
     say "  下一步：./snao up"
     ;;
 
   up)
-    need_env
+    need_env; source_env
     (cd deploy && docker compose up -d --remove-orphans >/dev/null 2>&1)
-    say "岛 01 已起（docker）"
+    say "岛 01 已起（docker，项目 ${COMPOSE_PROJECT_NAME:-lobehub}）"
     echo "启动宿主服务："
-    for s in "${SERVICES[@]}"; do
-      IFS=':' read -r name entry port <<< "$s"
-      start_node "$name" "$entry" "$port"
-    done
-    # 企微采集器：有机器人凭据才起
+    for s in "${SERVICES[@]}"; do start_node "${s%%:*}" "${s##*:}"; done
     if [ -n "$(env_get WECOM_AIBOT_ID)" ]; then
-      if [ -f "$PID_DIR/listener.pid" ] && kill -0 "$(cat "$PID_DIR/listener.pid")" 2>/dev/null; then
-        say "  listener 已在运行"
-      else
+      if pid_alive listener; then say "  listener 已在运行"; else
         node islands/intake/aibot-listener.mjs > "$LOG_DIR/listener.log" 2>&1 &
         echo $! > "$PID_DIR/listener.pid"
         say "  listener 启动中（企微长连接）"
@@ -138,14 +138,14 @@ PY
       say "  listener 跳过（未配置 WECOM_AIBOT_ID）"
     fi
     sleep 3
+    echo "准备最小样例数据："
+    node scripts/seed-fixtures.mjs 2>&1 | tail -8
     exec "$0" status
     ;;
 
   down)
-    for s in "${SERVICES[@]}"; do
-      IFS=':' read -r name _ _ <<< "$s"
-      stop_node "$name"
-    done
+    need_env; source_env
+    for s in "${SERVICES[@]}"; do stop_node "${s%%:*}"; done
     stop_node listener
     say "停止岛 01（docker）"
     (cd deploy && docker compose down >/dev/null 2>&1)
@@ -153,42 +153,32 @@ PY
     ;;
 
   status)
-    echo "== 岛 01（docker）=="
+    need_env; source_env
+    echo "== 岛 01（docker · 项目 ${COMPOSE_PROJECT_NAME:-lobehub}）=="
     (cd deploy && docker compose ps --format '  {{.Service}}\t{{.Status}}' 2>/dev/null | head -6)
     echo "== 宿主服务 =="
+    local_fail=0
     for s in "${SERVICES[@]}"; do
-      IFS=':' read -r name _ port <<< "$s"
-      path=/health; [ "$name" = gateway ] && path=/gw/health
-      if health "$port" "$path"; then ok "$name :$port"; else bad "$name :$port 不通"; fi
+      name="${s%%:*}"; port="$(port_of "$name")"
+      if alive "$port" "$(path_of "$name")"; then ok "$name :$port"; else bad "$name :$port 不通"; local_fail=1; fi
     done
-    if [ -f "$PID_DIR/listener.pid" ] && kill -0 "$(cat "$PID_DIR/listener.pid")" 2>/dev/null; then
-      ok "listener（企微长连接）"
-    else
-      say "listener 未运行"
-    fi
+    if pid_alive listener; then ok "listener（企微长连接）"; else say "listener 未运行"; fi
+    exit "$local_fail"
     ;;
 
-  logs)
-    cat "$LOG_DIR/${2:-line}.log" 2>/dev/null | tail -40 || bad "没有 $2 的日志"
-    ;;
+  logs) cat "$LOG_DIR/${2:-line}.log" 2>/dev/null | tail -40 || bad "没有 $2 的日志" ;;
 
-  gate)
-    node gate/run.mjs
-    ;;
+  gate) need_env; source_env; node gate/run.mjs ;;
 
   verify)
+    need_env; source_env
     echo "== 契约闸门 =="
     node gate/run.mjs || exit 1
-    echo
-    echo "== 健康 =="
+    echo; echo "== 健康 =="
     exec "$0" status
     ;;
 
-  token)
-    env_get SNAO_ADMIN_TOKEN
-    ;;
+  token) env_get SNAO_ADMIN_TOKEN ;;
 
-  *)
-    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
-    ;;
+  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

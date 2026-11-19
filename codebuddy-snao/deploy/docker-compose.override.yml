@@ -1,26 +1,48 @@
-# SNAO 覆盖（2026-11-19）：钉版本 + 只在本机监听 + 少启组件
-# 依据：B-06 钉 lobehub/lobehub:2.3.3；D-01 主机只对内；16GB 内存先不启 searxng/elasticsearch/fts-*
-# 注意：compose 的 ports 是「追加」语义，必须用 !reset 才能替换基础文件里的映射
+# SNAO 覆盖（2026-11-19）
+# 依据：B-06 钉 lobehub/lobehub:2.3.3；D-01 主机只对内；16GB 先不启 searxng/elasticsearch/fts-*
+#
+# 两个坑记在这里，别再踩：
+#  1. compose 的 ports 是「追加」语义 → 必须 !override 才能替换基础文件的映射（!reset 是整段清空）
+#  2. 基础文件写死了容器名（lobe-postgres 等）→ 同机跑第二套会撞名，
+#     所以这里全部加 ${COMPOSE_PROJECT_NAME} 前缀（命名卷仍按项目名隔离，数据不串）
 services:
   lobe:
     image: lobehub/lobehub:2.3.3
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}
     ports: !override
       - '127.0.0.1:${LOBE_PORT}:3210'
+
   gateway:
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-gateway
     ports: !override
       - '127.0.0.1:${AGENT_GATEWAY_HOST_PORT:-18787}:8787'
       - '127.0.0.1:${DEVICE_GATEWAY_HOST_PORT:-18788}:8788'
+
   postgresql:
-    # 线的服务跑在宿主上，需要连 PG：只在本机、用非默认端口避开本机其它项目
+    # 线的服务跑在宿主上，需要连 PG：只在本机、端口可配（避开本机其它项目）
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-postgres
     ports: !override
-      - '127.0.0.1:15432:5432'
+      - '127.0.0.1:${PG_HOST_PORT:-15432}:5432'
+
   redis:
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-redis
     ports: !reset []
+
   rustfs:
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-rustfs
     ports: !reset []
+
+  rustfs-init:
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-rustfs-init
+
   # 16GB 机器上先不启联网搜索（需要时：docker compose --profile search up -d searxng）
   searxng:
     profiles: ['search']
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-searxng
+
+  elasticsearch:
+    container_name: ${COMPOSE_PROJECT_NAME:-lobehub}-elasticsearch
+
   fts-search-reindex:
     image: lobehub/lobehub:2.3.3
   fts-search-sync:

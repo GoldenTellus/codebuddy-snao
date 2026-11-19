@@ -14,8 +14,8 @@
 
 - id: L-03-已授权路径可达
   call: { target: gateway, method: GET, path: /api/v1/agents, headers: { authorization: "Bearer ${SNAO_ADMIN_TOKEN}" } }
-  expect: { status_in: [200, 401] }
-  why: 401 是岛自己的鉴权；能拿到 401 说明请求真的透传到岛了
+  expect: { status_in: [200, 202, 401] }
+  why: 401 是岛自己的鉴权（说明透传到了岛）；202 是首次未授权、等人在审批台批一次
 
 - id: L-04-名单外路径404
   call: { target: gateway, method: GET, path: /api/v1/im/messages, headers: { authorization: "Bearer ${SNAO_ADMIN_TOKEN}" } }
