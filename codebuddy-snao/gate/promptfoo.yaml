@@ -1,0 +1,74 @@
+# promptfoo 评测：岛 02 的判定能力
+#
+# 目的（P4 第 1 项）：把"岛内判定"当成被评测对象，改一次就能判"变差了"。
+# 现在判定是规则版；换 LLM 之后同一套用例继续用，基线照旧比。
+#
+# 跑法：npx promptfoo eval -c gate/promptfoo.yaml
+# 存基线：npx promptfoo eval -c gate/promptfoo.yaml -o gate/promptfoo-baseline.json
+
+description: 岛 02 判定（去重 / 矛盾 / 质量分）
+
+prompts:
+  - '{{content}}'
+
+providers:
+  - id: exec:node gate/promptfoo-provider.mjs
+    label: island02-judge
+
+defaultTest:
+  options:
+    # 判定结果里没有模型调用，关掉缓存避免误导
+    disableCache: true
+
+tests:
+  - description: 完全重复 → 应指向已有第 0 条
+    vars:
+      content: 供应商A的价格是100元，账期30天
+      existing:
+        - 供应商A的价格是100元，账期30天
+    assert:
+      - type: javascript
+        value: JSON.parse(output).dedup_at === 0
+
+  - description: 同主体同属性不同值 → 矛盾
+    vars:
+      content: 供应商A的价格是120元，账期45天
+      existing:
+        - 供应商A的价格是100元，账期30天
+    assert:
+      - type: javascript
+        value: JSON.parse(output).conflict_at === 0
+
+  - description: 全新内容 → 既不重复也不矛盾
+    vars:
+      content: 客户B要求月底前交付第一批样品
+      existing:
+        - 供应商A的价格是100元，账期30天
+    assert:
+      - type: javascript
+        value: JSON.parse(output).dedup_at === null && JSON.parse(output).conflict_at === null
+
+  - description: 不同主体的同类属性不算矛盾
+    vars:
+      content: 供应商C的价格是80元
+      existing:
+        - 供应商A的价格是100元
+    assert:
+      - type: javascript
+        value: JSON.parse(output).conflict_at === null
+
+  - description: 已有空集时不报重复不报矛盾
+    vars:
+      content: 任意一条新知识
+      existing: []
+    assert:
+      - type: javascript
+        value: JSON.parse(output).dedup_at === null && JSON.parse(output).conflict_at === null
+
+  - description: 质量分落在 0–1 之间
+    vars:
+      content: 客户B要求月底前交付第一批样品
+      existing: []
+    assert:
+      - type: javascript
+        value: (() => { const q = JSON.parse(output).quality; return q >= 0 && q <= 1; })()

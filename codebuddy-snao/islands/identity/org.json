@@ -1,0 +1,58 @@
+{
+  "tenant": "t1",
+  "company": "新未来智能",
+  "updated_at": "2026-11-19T03:16:59.865Z",
+  "teams": [
+    {
+      "team_id": "team-a",
+      "name": "销售部",
+      "parent_team_id": null,
+      "head_id": "zhangjiayi",
+      "data_owner_id": "zhangjiayi"
+    },
+    {
+      "team_id": "team-b",
+      "name": "交付部",
+      "parent_team_id": null,
+      "head_id": "guoshuai",
+      "data_owner_id": null
+    }
+  ],
+  "people": [
+    {
+      "subject_id": "guoshuai",
+      "name": "郭帅",
+      "email": "guoshuai@xwl.ai",
+      "team_id": "team-b",
+      "role": "boss",
+      "admin": true,
+      "manages": [
+        "team-a",
+        "team-b"
+      ],
+      "status": "active"
+    },
+    {
+      "subject_id": "zhangjiayi",
+      "name": "张佳艺",
+      "email": "zhangjiayi@xwl.ai",
+      "team_id": "team-b",
+      "role": "manager",
+      "admin": false,
+      "manages": [
+        "team-a"
+      ],
+      "status": "active"
+    },
+    {
+      "subject_id": "lisi",
+      "name": "李四",
+      "email": "lisi@xwl.ai",
+      "team_id": "team-b",
+      "role": "employee",
+      "admin": false,
+      "manages": [],
+      "status": "disabled"
+    }
+  ]
+}

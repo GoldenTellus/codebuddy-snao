@@ -1,0 +1,14 @@
+{
+  "line": "v1",
+  "current": {
+    "name": "lobehub",
+    "base": "http://127.0.0.1:13210"
+  },
+  "canary": {
+    "name": "echo",
+    "base": "http://127.0.0.1:7100"
+  },
+  "ratio": 0,
+  "pin": {},
+  "updated_at": "2026-11-19T04:41:23.559Z"
+}

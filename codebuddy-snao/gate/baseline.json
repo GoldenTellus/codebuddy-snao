@@ -1,0 +1,85 @@
+{
+  "at": "2026-11-19T04:39:24.050Z",
+  "passed": 13,
+  "total": 13,
+  "cases": [
+    {
+      "id": "L-01-未登录打不到岛",
+      "ok": true,
+      "reason": null,
+      "status": 401
+    },
+    {
+      "id": "L-02-坏token拒绝",
+      "ok": true,
+      "reason": null,
+      "status": 401
+    },
+    {
+      "id": "L-03-已授权路径可达",
+      "ok": true,
+      "reason": null,
+      "status": 401
+    },
+    {
+      "id": "L-04-名单外路径404",
+      "ok": true,
+      "reason": null,
+      "status": 401
+    },
+    {
+      "id": "A-01-自己的文档可读",
+      "ok": true,
+      "reason": null,
+      "status": 400
+    },
+    {
+      "id": "A-02-别人的文档上呈",
+      "ok": true,
+      "reason": null,
+      "status": 400
+    },
+    {
+      "id": "A-03-已删除文档拒绝",
+      "ok": true,
+      "reason": null,
+      "status": 400
+    },
+    {
+      "id": "A-04-不存在的文档拒绝",
+      "ok": true,
+      "reason": null,
+      "status": 400
+    },
+    {
+      "id": "A-05-知识越权不生成待决",
+      "ok": true,
+      "reason": null,
+      "status": 400
+    },
+    {
+      "id": "I-01-岛03原样返回多所有者",
+      "ok": true,
+      "reason": null,
+      "status": 200
+    },
+    {
+      "id": "I-02-岛03带删除标记",
+      "ok": true,
+      "reason": null,
+      "status": 200
+    },
+    {
+      "id": "I-03-岛02只接受线",
+      "ok": true,
+      "reason": null,
+      "status": 403
+    },
+    {
+      "id": "D-01-组织快照可复现",
+      "ok": true,
+      "reason": null,
+      "status": 200
+    }
+  ]
+}

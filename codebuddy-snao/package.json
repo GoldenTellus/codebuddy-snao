@@ -1,0 +1,36 @@
+{
+  "name": "codebuddy-snao",
+  "version": "1.0.0",
+  "description": "> 这个文件夹是 **SNAO 的开工落地目录**。以后所有实现产物（代码、配置、脚本、部署文件）都放这里，不再出现在工作区根目录。",
+  "main": "index.js",
+  "scripts": {
+    "line": "node --import tsx ./line/server.ts",
+    "gateway": "node --import tsx ./gateway/server.ts",
+    "seed": "node --import tsx ./line/seed.ts",
+    "gate": "node gate/run.mjs",
+    "gate:save": "node gate/run.mjs --save",
+    "bind": "node gate/bind.mjs",
+    "intake": "node --import tsx ./islands/intake/server.ts",
+    "intake:listen": "node islands/intake/aibot-listener.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hono/node-server": "^2.1.9",
+    "@wecom/aibot-node-sdk": "^1.0.7",
+    "hono": "^4.13.19",
+    "pg": "^8.23.1",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

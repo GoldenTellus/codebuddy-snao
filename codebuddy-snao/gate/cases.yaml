@@ -1,0 +1,68 @@
+# SNAO 契约测试用例集
+# 每条用例都是一句可执行的断言：谁、做什么、期望什么结果、为什么
+# 判据改不了才叫失败；这里写的是"行为不许退化"的底线
+
+- id: L-01-未登录打不到岛
+  call: { target: gateway, method: GET, path: /api/v1/users/me }
+  expect: { status: 401 }
+  why: 没有 token 时由线判定，不是由岛判定
+
+- id: L-02-坏token拒绝
+  call: { target: gateway, method: GET, path: /api/v1/users/me, headers: { authorization: "Bearer wrong" } }
+  expect: { status: 401 }
+  why: 只存 token 哈希，认不出就是认不出
+
+- id: L-03-已授权路径可达
+  call: { target: gateway, method: GET, path: /api/v1/agents, headers: { authorization: "Bearer ${SNAO_ADMIN_TOKEN}" } }
+  expect: { status_in: [200, 401] }
+  why: 401 是岛自己的鉴权；能拿到 401 说明请求真的透传到岛了
+
+- id: L-04-名单外路径404
+  call: { target: gateway, method: GET, path: /api/v1/im/messages, headers: { authorization: "Bearer ${SNAO_ADMIN_TOKEN}" } }
+  expect: { status: 404 }
+  why: 不在 5 组名单里的路径由线直接挡，且不暴露岛有没有这条路由
+
+- id: A-01-自己的文档可读
+  call: { target: line, method: POST, path: /v1/admit, body: { subject: guoshuai, action: "doc.read", resource: "wecom-aibot:doc:6" } }
+  expect: { json: { result: allow, why: owner } }
+  why: owner 放行
+
+- id: A-02-别人的文档上呈
+  call: { target: line, method: POST, path: /v1/admit, body: { subject: zhangjiayi, action: "doc.read", resource: "wecom-aibot:doc:6" } }
+  expect: { json: { error: NEED_DECISION } }
+  why: 跨人读是披露问题，交给人裁
+
+- id: A-03-已删除文档拒绝
+  call: { target: line, method: POST, path: /v1/admit, body: { subject: guoshuai, action: "doc.read", resource: "wecom-aibot:doc:1" } }
+  expect: { json: { result: deny, why: deleted } }
+  why: 源里删了就不该还能读
+
+- id: A-04-不存在的文档拒绝
+  call: { target: line, method: POST, path: /v1/admit, body: { subject: guoshuai, action: "doc.read", resource: "wecom-aibot:doc:999" } }
+  expect: { json: { result: deny, why: no_such_doc } }
+  why: 查不到不猜
+
+- id: A-05-知识越权不生成待决
+  call: { target: line, method: POST, path: /v1/admit, body: { subject: lisi, action: "knowledge.read", resource: "knowledge:personal:guoshuai" } }
+  expect: { json: { result: deny } }
+  why: 越权读知识是拒绝，不是请人批准
+
+- id: I-01-岛03原样返回多所有者
+  call: { target: island03, method: GET, path: /v1/docs }
+  expect: { docs_min_total: 3, docs_owners_at_least: 2 }
+  why: 岛内不许预过滤；返回结果里必须同时存在多个所有者
+
+- id: I-02-岛03带删除标记
+  call: { target: island03, method: GET, path: /v1/docs }
+  expect: { docs_deleted_at_least: 1 }
+  why: 删除标记是事实，必须原样交出去
+
+- id: I-03-岛02只接受线
+  call: { target: island02, method: POST, path: /v1/ingest, body: { events: [] } }
+  expect: { status: 403 }
+  why: 没有线就喂不进来
+
+- id: D-01-组织快照可复现
+  call: { target: island04, method: GET, path: /v1/people }
+  expect: { has_fields: [snapshot_sha, people] }
+  why: 事后能复现"当时用的哪版组织数据"

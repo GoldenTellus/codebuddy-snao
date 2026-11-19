@@ -1,0 +1,52 @@
+# ===== 内部设计文档：留在本地，不进客户仓库 =====
+# （YG 2026-11-19 定：这些是内部资产，客户可见的只有 codebuddy-snao/ 的部署说明）
+/SNAO_Framework_v1.1.md
+/SNAO_共识与决策_v1.0.md
+/SNAO_四岛决策_v1.0.md
+/SNAO_实现方案与路线图_v2.0.md
+/调研/
+/AGENTS.md
+
+# ===== 绝对不能进仓库 =====
+# 密钥
+.env
+.env.*
+!.env.example
+**/deploy/.env
+*.pem
+*.key
+
+# 运行时数据（客户资料、上传的文件、向量库）
+codebuddy-snao/data/
+codebuddy-snao/islands/*/data/
+
+# 依赖（客户自己装）
+node_modules/
+.islands/**/node_modules/
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+
+# 日志
+*.log
+logs/
+/tmp/
+
+# 本机产物
+.DS_Store
+.idea/
+.vscode/
+*.local
+
+# 进化提案是本机实验产物，不进客户仓库
+codebuddy-snao/evolve/proposals/
+
+# 基线属于环境相关（客户机器上自建），但保留默认基线便于开箱
+# codebuddy-snao/gate/baseline.json
+
+# docker 卷与挂载目录（PG 数据、对象存储、日志，全部本机运行时产物）
+codebuddy-snao/deploy/data/
+codebuddy-snao/deploy/volumes/
+codebuddy-snao/deploy/logs/
+codebuddy-snao/logs/

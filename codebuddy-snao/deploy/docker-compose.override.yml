@@ -1,0 +1,27 @@
+# SNAO 覆盖（2026-11-19）：钉版本 + 只在本机监听 + 少启组件
+# 依据：B-06 钉 lobehub/lobehub:2.3.3；D-01 主机只对内；16GB 内存先不启 searxng/elasticsearch/fts-*
+# 注意：compose 的 ports 是「追加」语义，必须用 !reset 才能替换基础文件里的映射
+services:
+  lobe:
+    image: lobehub/lobehub:2.3.3
+    ports: !override
+      - '127.0.0.1:${LOBE_PORT}:3210'
+  gateway:
+    ports: !override
+      - '127.0.0.1:${AGENT_GATEWAY_HOST_PORT:-18787}:8787'
+      - '127.0.0.1:${DEVICE_GATEWAY_HOST_PORT:-18788}:8788'
+  postgresql:
+    # 线的服务跑在宿主上，需要连 PG：只在本机、用非默认端口避开本机其它项目
+    ports: !override
+      - '127.0.0.1:15432:5432'
+  redis:
+    ports: !reset []
+  rustfs:
+    ports: !reset []
+  # 16GB 机器上先不启联网搜索（需要时：docker compose --profile search up -d searxng）
+  searxng:
+    profiles: ['search']
+  fts-search-reindex:
+    image: lobehub/lobehub:2.3.3
+  fts-search-sync:
+    image: lobehub/lobehub:2.3.3

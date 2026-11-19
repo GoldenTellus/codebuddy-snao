@@ -1,0 +1,142 @@
+{
+  "note": "评分集：每条都标了正确答案。进化只拿它打分，不拿它训练。",
+  "cases": [
+    {
+      "id": "S-01",
+      "content": "供应商A的价格是100元，账期30天",
+      "existing": [
+        "供应商A的价格是100元，账期30天"
+      ],
+      "expect_dedup": true,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-02",
+      "content": "供应商A的价格是120元，账期45天",
+      "existing": [
+        "供应商A的价格是100元，账期30天"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-03",
+      "content": "客户B要求月底前交付第一批样品",
+      "existing": [
+        "供应商A的价格是100元，账期30天"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-04",
+      "content": "供应商C的价格是80元",
+      "existing": [
+        "供应商A的价格是100元"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-05",
+      "content": "项目负责人是张三",
+      "existing": [
+        "项目负责人是李四"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-06",
+      "content": "合同签署日期是2026年3月1日",
+      "existing": [
+        "合同签署日期是2026年5月1日"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-07",
+      "content": "供应商A的价格是100元，账期30天",
+      "existing": [
+        "供应商A的价格是100元，账期30天",
+        "客户B要求月底前交付第一批样品"
+      ],
+      "expect_dedup": true,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-08",
+      "content": "产品版本是v1.2",
+      "existing": [
+        "产品版本是v1.1"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-09",
+      "content": "客户B的对接人电话是13800000000",
+      "existing": [
+        "客户B的对接人电话是13900000000"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-10",
+      "content": "交付部负责人是郭帅",
+      "existing": [
+        "供应商A的价格是100元"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-11",
+      "content": "供应商A的价格是100元",
+      "existing": [],
+      "expect_dedup": false,
+      "expect_conflict": false
+    },
+    {
+      "id": "S-12",
+      "content": "月度目标金额是50万元",
+      "existing": [
+        "月度目标金额是30万元"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": true
+    },
+    {
+      "id": "S-13",
+      "content": "供应商A的价格是100元，账期30天，联系人李四，合同编号HT2026",
+      "existing": [
+        "供应商A的价格是100元，账期30天，联系人张三，合同编号HT2026"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false,
+      "_note": "几乎相同但联系人不同 → 不是重复，是新信息（相似度 0.69：阈值 0.7 会误判）"
+    },
+    {
+      "id": "S-14",
+      "content": "供应商A的价格是100元，账期30天，联系人张三，合同编号HT2027",
+      "existing": [
+        "供应商A的价格是100元，账期30天，联系人张三，合同编号HT2026"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false,
+      "_note": "只差合同编号 → 不是重复（相似度 0.833：阈值 0.8 会误判，0.9 才不误判）"
+    },
+    {
+      "id": "S-15",
+      "content": "供应商A的价格是100元，账期30天（含税）",
+      "existing": [
+        "供应商A的价格是100元，账期30天"
+      ],
+      "expect_dedup": false,
+      "expect_conflict": false,
+      "_note": "加了限定条件 → 信息更多，不算同一条（相似度 0.714：阈值 0.7 会误判）"
+    }
+  ]
+}
