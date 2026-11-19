@@ -59,6 +59,11 @@ cp deploy/.env.example deploy/.env
 ./snao verify    # 跑契约闸门 + 健康检查
 ```
 
+## 三·五、装完怎么用
+
+看 [docs/上手.md](docs/上手.md)：审批台、加人调岗离职、接企业微信、换岛、常见问题。
+都不需要看代码。
+
 ## 四、验收（第一次部署后该看到什么）
 
 ```bash

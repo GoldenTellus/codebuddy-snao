@@ -29,6 +29,7 @@ cp deploy/.env.example deploy/.env    # 至少填 POSTGRES_PASSWORD
 ```
 
 完整部署说明见 [codebuddy-snao/README.md](codebuddy-snao/README.md)。
+装完怎么用（审批台 / 加人 / 接企微 / 换岛）见 [codebuddy-snao/docs/上手.md](codebuddy-snao/docs/上手.md)。
 
 ## 环境要求
 
