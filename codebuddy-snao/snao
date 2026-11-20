@@ -60,6 +60,7 @@ port_of() {
     island02) echo "${SNAO_PRECIPITATE_PORT:-7200}" ;;
     island03) echo "${SNAO_INTAKE_PORT:-7400}" ;;
     island04) echo "${SNAO_IDENTITY_PORT:-7300}" ;;
+    embed)    echo "${EMBED_PORT:-7500}" ;;
   esac
 }
 path_of() { [ "$1" = gateway ] && echo /gw/health || echo /health; }
@@ -82,6 +83,17 @@ stop_node() {
 }
 
 alive() { curl -sS -o /dev/null --max-time 3 "http://127.0.0.1:$1$2" 2>/dev/null; }
+
+PY_SERVICES=("embed:./islands/embed/server.py:islands/precipitate/.venv/bin/python")
+
+start_py() {
+  local name="$1" entry="$2" py="$3" port; port="$(port_of "$1")"
+  if pid_alive "$name"; then say "  $name 已在运行"; return; fi
+  if [ ! -x "$py" ]; then bad "  $name 跳过（缺虚拟环境 ${py}）"; return; fi
+  EMBED_PORT="$port" "$py" "$entry" > "$LOG_DIR/$name.log" 2>&1 &
+  echo $! > "$PID_DIR/$name.pid"
+  say "  $name 启动中（:${port}，本地向量）"
+}
 
 wait_pg() {
   local cname="${COMPOSE_PROJECT_NAME:-lobehub}-postgres" st=""
@@ -129,6 +141,10 @@ case "${1:-status}" in
     say "岛 01 已起（docker，项目 ${COMPOSE_PROJECT_NAME:-lobehub}）"
     echo "启动宿主服务："
     for s in "${SERVICES[@]}"; do start_node "${s%%:*}" "${s##*:}"; done
+    for s in "${PY_SERVICES[@]}"; do
+      IFS=':' read -r n e py <<< "$s"
+      start_py "$n" "$e" "$py"
+    done
     if [ -n "$(env_get WECOM_AIBOT_ID)" ]; then
       if pid_alive listener; then say "  listener 已在运行"; else
         node islands/intake/aibot-listener.mjs > "$LOG_DIR/listener.log" 2>&1 &
@@ -147,6 +163,7 @@ case "${1:-status}" in
   down)
     need_env; source_env
     for s in "${SERVICES[@]}"; do stop_node "${s%%:*}"; done
+    for s in "${PY_SERVICES[@]}"; do stop_node "${s%%:*}"; done
     stop_node listener
     say "停止岛 01（docker）"
     (cd deploy && docker compose down >/dev/null 2>&1)
@@ -162,6 +179,10 @@ case "${1:-status}" in
     for s in "${SERVICES[@]}"; do
       name="${s%%:*}"; port="$(port_of "$name")"
       if alive "$port" "$(path_of "$name")"; then ok "$name :$port"; else bad "$name :$port 不通"; local_fail=1; fi
+    done
+    for s in "${PY_SERVICES[@]}"; do
+      n="${s%%:*}"; p="$(port_of "$n")"
+      if alive "$p" /health; then ok "$n :${p}（本地向量）"; else bad "$n :${p} 不通"; local_fail=1; fi
     done
     if pid_alive listener; then ok "listener（企微长连接）"; else say "listener 未运行"; fi
     exit "$local_fail"
