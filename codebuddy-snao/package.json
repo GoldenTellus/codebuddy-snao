@@ -1,6 +1,6 @@
 {
   "name": "codebuddy-snao",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "> 这个文件夹是 **SNAO 的开工落地目录**。以后所有实现产物（代码、配置、脚本、部署文件）都放这里，不再出现在工作区根目录。",
   "main": "index.js",
   "scripts": {
