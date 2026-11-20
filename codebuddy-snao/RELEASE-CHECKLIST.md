@@ -63,7 +63,7 @@ L-03 允许首次 202；新增 `scripts/seed-fixtures.mjs`（`./snao up` 自动�
 
 ## 五、已定 / 待定
 
-- [x] **设计文档不进仓库**（2026-11-19 YG 定）：`SNAO_Framework_v1.1.md`、`SNAO_共识与决策`、`SNAO_四岛决策`、`SNAO_实现方案与路线图`、`调研/`、`AGENTS.md` 全部留在本地，已写进 `.gitignore`
+- [x] **内部设计文档不进仓库**（2026-11-19 YG 定）：设计、共识、决策、实现方案、升级手册、调研、AGENTS.md 全部留在本地，已写进 `.gitignore`
 - [x] 首次 commit：`33f92f8`，49 个文件 / 0.4MB；`.git` 仅 396K（重建过一次，清掉了早期误入的数据库对象）
 - [x] 干净克隆验证：`git clone` → `npm install`（55 个包，3 秒）→ `./snao status` 正常
 - [ ] 仓库地址与可见性（public / private）
