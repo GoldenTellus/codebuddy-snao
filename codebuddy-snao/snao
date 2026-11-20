@@ -9,6 +9,7 @@
 #   ./snao verify      跑验收（契约闸门 + 健康检查）
 #   ./snao gate        只跑契约闸门
 #   ./snao token       显示管理员令牌
+#   ./snao accept      0.1 验收（一条命令证明跑通；加 --with-cognee 连引擎一起验）
 
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -169,6 +170,8 @@ case "${1:-status}" in
   logs) cat "$LOG_DIR/${2:-line}.log" 2>/dev/null | tail -40 || bad "没有 $2 的日志" ;;
 
   gate) need_env; source_env; node gate/run.mjs ;;
+
+  accept) need_env; source_env; node scripts/acceptance.mjs "${@:2}" ;;
 
   verify)
     need_env; source_env

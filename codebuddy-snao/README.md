@@ -28,6 +28,9 @@
 | Docker + Compose v2 | 任意较新版 | 只用来跑岛 01 |
 | Node.js | ≥ 20（推荐 22） | 线、网关、岛 02/03/04 |
 | 内存 | ≥ 8GB（推荐 16GB） | 岛 01 约占 500MB–1.5GB |
+| OpenSSL 3（仅 macOS） | 可选 | 岛 02 的图库 `kuzu` 需要它。没装 Homebrew 的话会报 `libssl.3.dylib not found` |
+
+> macOS 缺 OpenSSL 3 的处理：`brew install openssl@3`（推荐），或设置 `DYLD_FALLBACK_LIBRARY_PATH` 指向一份 openssl@3 的 `lib` 目录。
 
 ## 二、部署（四步）
 
@@ -58,6 +61,20 @@ cp deploy/.env.example deploy/.env
 ./snao logs line # 看某个服务日志
 ./snao verify    # 跑契约闸门 + 健康检查
 ```
+
+## 三·六、0.1 验收（一条命令证明跑通）
+
+```bash
+./snao accept                 # 9 项，约 20 秒
+./snao accept --with-cognee   # 再加引擎可用性，约 1 分 10 秒
+```
+
+覆盖：六个口活着 / 契约闸门 13/13 / 没令牌打不到岛 / 审批闭环（拒绝必填理由、批准后放行）/
+journal 在记账 / 岛 03 带 ACL 与删除标记且多所有者 / 岛 02 三口连通 / 岛 04 四口通 /
+灰度切到 echo 再回滚 /（可选）cognee 引擎可用。
+
+**0.1 的定义**：现在这套实现（线 + 网关 + 四个自研岛 + 闸门 + 灰度 + 部署）是活的、能自证。
+它**不承诺符合四岛决策的设计**——那是 1.0 的事（见内部文档）。
 
 ## 三·五、装完怎么用
 

@@ -42,6 +42,27 @@ node line/pump-journal.mjs                            # 把线的 journal 递给
 
 `export` 返回 2 条知识（预置的一条 + 被接受的一条）。
 
+## 换引擎前的可行性验证（2026-11-19 实测）
+
+`cognee 1.6.10` + DeepSeek（OpenAI 兼容）+ 本地向量模型 `BAAI/bge-small-zh-v1.5`，实跑结果：
+
+| 步骤 | 用时 | 结果 |
+|---|---|---|
+| `add` 3 条中文 | 8.9s | ✓ |
+| `cognify` | 12.5s | ✓ |
+| `search`「供应商A的价格是多少」 | 7.2s | 返回 4 条 |
+| 图数据 | 0.0s | 17 节点 / 22 条边 |
+| 血缘（`PROVENANCE_TRACKING=true`） | — | `provenance_entries` 11 / `provenance_edge_evidence` 53 |
+
+**两个平台坑**：
+
+1. **macOS 缺 OpenSSL 3**：cognee 的图库 `kuzu` 需要 `/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib`。
+   有 brew 就 `brew install openssl@3`；没有就取一份 bottle 的 `lib` 目录并设 `DYLD_FALLBACK_LIBRARY_PATH`。
+2. **向量模型名要对上 fastembed**：默认的 `openai/text-embedding-3-large` 不被支持，
+   中文用 `EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5`。
+
+跑法：`islands/precipitate/.venv/bin/python islands/precipitate/cognee-smoke.py`
+
 ## 已知缺口（P2 认了）
 
 | 缺口 | 说明 | 下一步 |
